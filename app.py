@@ -164,15 +164,27 @@ def logout():
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
     db = get_db()
     cursor = db.cursor()
+
+    # 현재 사용자 정보 가져오기
     cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
     current_user = cursor.fetchone()
-    cursor.execute("SELECT * FROM product")
-    all_products = cursor.fetchall()
-    return render_template('dashboard.html', products=all_products, user=current_user)
 
+    # 검색어 가져오기
+    query = request.args.get('query', '').strip()
+
+    if query:
+        # 검색어가 있을 경우 제목에서 LIKE 검색
+        cursor.execute("SELECT * FROM product WHERE title LIKE ?", ('%' + query + '%',))
+    else:
+        # 검색어가 없을 경우 전체 상품 조회
+        cursor.execute("SELECT * FROM product")
+
+    all_products = cursor.fetchall()
+
+    return render_template('dashboard.html', products=all_products, user=current_user)
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user_id' not in session:
