@@ -8,8 +8,17 @@ from flask_wtf import CSRFProtect, FlaskForm
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
+from flask import abort
+from wtforms import IntegerField
+
+
 
 # === 폼 클래스 정의 ===
+
+class TransferForm(FlaskForm):
+    amount = IntegerField('송금액', validators=[DataRequired(), NumberRange(min=1, message="금액은 1 이상이어야 합니다.")])
+    submit = SubmitField('송금')
+
 
 class ReportForm(FlaskForm):
     target_id = StringField('신고 대상 ID', validators=[DataRequired(), Length(min=5, max=36)])
@@ -96,6 +105,94 @@ def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('index.html')
+
+@app.route('/admin/manage_products')
+def manage_products():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM product")
+    products = cursor.fetchall()
+
+    return render_template('manage_products.html', products=products)
+
+
+@app.route('/admin')
+def admin_dashboard():
+    # 관리자 권한 검사 부분을 제거하고, 로그인된 사용자에게 대시보드를 표시
+    if 'user_id' not in session:
+        return redirect(url_for('login'))  # 로그인되지 않은 경우 로그인 페이지로 리디렉션
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+    current_user = cursor.fetchone()
+
+    # 관리자 검사 기능을 제외한 간단한 관리 대시보드
+    return render_template('admin_dashboard.html', user=current_user)
+
+@app.route('/transfer', methods=['GET', 'POST'])
+def transfer():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    db = get_db()
+    cursor = db.cursor()
+
+    # 현재 유저 정보 가져오기
+    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+    sender = cursor.fetchone()
+
+    # 송금 폼
+    form = TransferForm()
+
+    if form.validate_on_submit():
+        receiver_username = request.form['receiver_username']  # 수신자 사용자명
+
+        # 수신자 정보 가져오기
+        cursor.execute("SELECT * FROM user WHERE username = ?", (receiver_username,))
+        receiver = cursor.fetchone()
+
+        if not receiver:
+            flash("존재하지 않는 사용자입니다.")
+            return redirect(url_for('transfer'))
+
+        transfer_amount = form.amount.data
+
+        # 송금할 금액이 충분한지 확인
+        if sender['balance'] < transfer_amount:
+            flash("잔액이 부족합니다.")
+            return redirect(url_for('transfer'))
+
+        # 송금 처리
+        cursor.execute("UPDATE user SET balance = balance - ? WHERE id = ?", (transfer_amount, sender['id']))
+        cursor.execute("UPDATE user SET balance = balance + ? WHERE id = ?", (transfer_amount, receiver['id']))
+
+        # 트랜잭션을 커밋하여 변경사항을 저장
+        db.commit()
+
+        flash(f"{receiver_username}에게 {transfer_amount}원이 송금되었습니다.")
+        return redirect(url_for('dashboard'))
+
+    return render_template('transfer.html', form=form)
+
+
+
+#@app.route('/admin')
+#def admin_dashboard():
+
+#    db = get_db()
+ #  cursor.execute("SELECT * FROM user")
+ #   users = cursor.fetchall()
+ #   cursor.execute("SELECT * FROM product")
+ #   products = cursor.fetchall()
+ #   cursor.execute("SELECT * FROM report")
+ #   reports = cursor.fetchall()
+
+  #  return render_template('admin_dashboard.html', users=users, products=products, reports=reports)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -246,6 +343,35 @@ def view_product(product_id):
     cursor.execute("SELECT * FROM user WHERE id = ?", (product['seller_id'],))
     seller = cursor.fetchone()
     return render_template('view_product.html', product=product, seller=seller)
+
+@app.route('/admin/view_users')
+def view_users():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    # 사용자 정보를 가져오는 로직 추가 (실제 데이터베이스 쿼리 필요)
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM user")
+    users = cursor.fetchall()
+
+    return render_template('view_users.html', users=users)
+
+
+
+@app.route('/admin/view_reports')
+def view_reports():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    # 예시로 신고된 콘텐츠를 가져오는 로직 추가 (실제 데이터베이스 쿼리 필요)
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM reports")
+    reports = cursor.fetchall()
+
+    return render_template('view_reports.html', reports=reports)
+
 
 @app.route('/report', methods=['GET', 'POST'])
 def report():
