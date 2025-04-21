@@ -188,7 +188,8 @@ def profile():
         flash('프로필이 업데이트되었습니다.')
         return redirect(url_for('profile'))
 
-    return render_template('edit_profile.html', form=form)
+    return render_template('profile.html', form=form)
+
 
 @app.route('/product/new', methods=['GET', 'POST'])
 def new_product():
