@@ -3,10 +3,23 @@ import uuid
 import re
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
-from flask_wtf import CSRFProtect
+from flask_wtf import CSRFProtect, FlaskForm
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, Length, EqualTo
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
-from forms import LoginForm, RegisterForm
+
+# === 폼 클래스 정의 ===
+class RegisterForm(FlaskForm):
+    username = StringField('사용자명', validators=[DataRequired(), Length(min=4, max=32)])
+    password = PasswordField('비밀번호', validators=[DataRequired(), Length(min=6, max=32)])
+    confirm_password = PasswordField('비밀번호 확인', validators=[DataRequired(), EqualTo('password', message='비밀번호가 일치하지 않습니다.')])
+    submit = SubmitField('회원가입')
+
+class LoginForm(FlaskForm):
+    username = StringField('사용자명', validators=[DataRequired(), Length(min=4, max=32)])
+    password = PasswordField('비밀번호', validators=[DataRequired(), Length(min=6, max=32)])
+    submit = SubmitField('로그인')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secure-secret-key'
