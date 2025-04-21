@@ -1,19 +1,27 @@
 import sqlite3
 import uuid
+import re
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
-from markupsafe import escape
+from flask_wtf import CSRFProtect
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-DATABASE = 'market.db'
-socketio = SocketIO(app)
+app.config['SECRET_KEY'] = 'secret!'  # 실제 운영 시 환경 변수로 설정 권장
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+csrf = CSRFProtect(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+DATABASE = 'market.db'
+
+# 데이터베이스 연결 관리: 요청마다 연결 생성 후 사용, 종료 시 close
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
+        db.row_factory = sqlite3.Row  # 결과를 dict처럼 사용하기 위함
     return db
 
 @app.teardown_appcontext
@@ -22,6 +30,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+# 테이블 생성 (최초 실행 시에만)
 def init_db():
     with app.app_context():
         db = get_db()
@@ -62,17 +71,27 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = escape(request.form['username'])
-        password = escape(request.form['password'])
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+
+        if not re.match(r'^[\w.@+-]{4,20}$', username):
+            flash('사용자명이 유효하지 않습니다.')
+            return redirect(url_for('register'))
+        if len(password) < 6:
+            flash('비밀번호는 최소 6자 이상이어야 합니다.')
+            return redirect(url_for('register'))
+
         db = get_db()
         cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
         if cursor.fetchone() is not None:
             flash('이미 존재하는 사용자명입니다.')
             return redirect(url_for('register'))
+
         user_id = str(uuid.uuid4())
+        hashed_pw = generate_password_hash(password)
         cursor.execute("INSERT INTO user (id, username, password) VALUES (?, ?, ?)",
-                       (user_id, username, password))
+                       (user_id, username, hashed_pw))
         db.commit()
         flash('회원가입이 완료되었습니다. 로그인 해주세요.')
         return redirect(url_for('login'))
@@ -81,13 +100,14 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = escape(request.form['username'])
-        password = escape(request.form['password'])
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("SELECT * FROM user WHERE username = ? AND password = ?", (username, password))
+        cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
         user = cursor.fetchone()
-        if user:
+        if user and check_password_hash(user['password'], password):
+            session.clear()  # 세션 고정 공격 방지
             session['user_id'] = user['id']
             flash('로그인 성공!')
             return redirect(url_for('dashboard'))
@@ -98,7 +118,7 @@ def login():
 
 @app.route('/logout')
 def logout():
-    session.pop('user_id', None)
+    session.clear()
     flash('로그아웃되었습니다.')
     return redirect(url_for('index'))
 
@@ -121,7 +141,7 @@ def profile():
     db = get_db()
     cursor = db.cursor()
     if request.method == 'POST':
-        bio = escape(request.form.get('bio', ''))
+        bio = request.form.get('bio', '').strip()
         cursor.execute("UPDATE user SET bio = ? WHERE id = ?", (bio, session['user_id']))
         db.commit()
         flash('프로필이 업데이트되었습니다.')
@@ -135,9 +155,12 @@ def new_product():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
-        title = escape(request.form['title'])
-        description = escape(request.form['description'])
-        price = escape(request.form['price'])
+        title = request.form['title'].strip()
+        description = request.form['description'].strip()
+        price = request.form['price'].strip()
+        if not title or not description or not price:
+            flash("모든 항목을 입력해주세요.")
+            return redirect(url_for('new_product'))
         db = get_db()
         cursor = db.cursor()
         product_id = str(uuid.uuid4())
@@ -168,8 +191,11 @@ def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
-        target_id = escape(request.form['target_id'])
-        reason = escape(request.form['reason'])
+        target_id = request.form['target_id'].strip()
+        reason = request.form['reason'].strip()
+        if not target_id or not reason:
+            flash('신고 대상과 사유를 입력해주세요.')
+            return redirect(url_for('report'))
         db = get_db()
         cursor = db.cursor()
         report_id = str(uuid.uuid4())
@@ -185,8 +211,6 @@ def report():
 @socketio.on('send_message')
 def handle_send_message_event(data):
     data['message_id'] = str(uuid.uuid4())
-    data['username'] = escape(data['username'])
-    data['message'] = escape(data['message'])
     send(data, broadcast=True)
 
 if __name__ == '__main__':
