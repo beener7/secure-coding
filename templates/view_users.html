@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}사용자 관리{% endblock %}
+
+{% block content %}
+  <h2>사용자 관리</h2>
+
+  <h3>모든 사용자</h3>
+  <ul>
+    {% for user in users %}
+      <li>
+        이름: {{ user.username }}<br>
+        이메일: {{ user.email }}<br>
+        가입 날짜: {{ user.registration_date }}
+        <!-- 추가적인 관리 기능을 여기에 추가할 수 있습니다 -->
+      </li>
+    {% else %}
+      <li>사용자가 없습니다.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
