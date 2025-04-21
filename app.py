@@ -1,6 +1,7 @@
 import sqlite3
 import uuid
 import re
+from forms import LoginForm
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
 from flask_wtf import CSRFProtect
@@ -97,9 +98,10 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        password = form.password.data.strip()
 
         db = get_db()
         cursor = db.cursor()
@@ -114,7 +116,8 @@ def login():
         else:
             flash('아이디 또는 비밀번호가 올바르지 않습니다.')
             return redirect(url_for('login'))
-    return render_template('login.html')
+    return render_template('login.html', form=form)
+
 
 @app.route('/logout')
 def logout():
