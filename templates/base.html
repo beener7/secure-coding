@@ -1,54 +1,122 @@
-{% extends "base.html" %}
-{% block title %}대시보드{% endblock %}
-{% block content %}
-<h2>대시보드</h2>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}My Market{% endblock %}</title>
 
-<h3>등록된 상품</h3>
-<ul>
-  {% for product in products %}
-    <li>
-      <a href="{{ url_for('view_product', product_id=product.id) }}">{{ product.title|e }}</a>
-      - 가격: {{ product.price|e }}
-    </li>
-  {% endfor %}
-</ul>
+  <!-- 보안 헤더 및 CSP -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:*">
+  <meta name="referrer" content="no-referrer">
+  <meta name="X-Content-Type-Options" content="nosniff">
+  <meta name="X-Frame-Options" content="DENY">
 
-<p><a href="{{ url_for('new_product') }}">새 상품 등록</a></p>
+  <!-- Socket.IO 클라이언트 라이브러리 (제한된 도메인에서만 허용) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+          integrity="sha384-WtRZQzLhQ95PK1QZCgShfy5DJnRCu6yQO+6Ot6Y2BtdkWyv7GdZu8BzEJkKhB7nM"
+          crossorigin="anonymous"></script>
 
-<h3>실시간 채팅</h3>
-<div id="chat">
-  <ul id="messages"></ul>
-  <input id="chat_input" type="text" placeholder="메시지를 입력하세요" aria-label="메시지 입력">
-  <button onclick="sendMessage()">전송</button>
-</div>
-
-<script type="text/javascript">
-  const socket = io();
-  socket.on('connect', function() {
-    console.log("채팅 서버에 연결됨");
-  });
-
-  socket.on('message', function(data) {
-    const messages = document.getElementById('messages');
-    const item = document.createElement('li');
-    const safeUser = document.createTextNode(data.username + ": ");
-    const safeMsg = document.createTextNode(data.message);
-    item.appendChild(safeUser);
-    item.appendChild(safeMsg);
-    messages.appendChild(item);
-    messages.scrollTop = messages.scrollHeight;
-  });
-
-  function sendMessage() {
-    const input = document.getElementById('chat_input');
-    const message = input.value.trim();
-    if (message.length > 0) {
-      socket.emit('send_message', {
-        username: {{ user.username|tojson }},
-        message: message
-      });
-      input.value = "";
+  <style>
+    body {
+      background-color: #F7F7F7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #333;
     }
-  }
-</script>
-{% endblock %}
+    nav {
+      background-color: #fff;
+      padding: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    nav a {
+      text-decoration: none;
+      color: #555;
+      margin-right: 15px;
+      font-weight: 500;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background-color: #fff;
+      padding: 40px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+    }
+    h1, h2, h3 {
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #007AFF;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #005BB5;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .flash {
+      background-color: #FFECB3;
+      padding: 10px;
+      border: 1px solid #FFB74D;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    #chat {
+      margin-top: 40px;
+    }
+    #messages {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      background-color: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    {% if session.get('user_id') %}
+      <a href="{{ url_for('dashboard') }}">대시보드</a>
+      <a href="{{ url_for('profile') }}">프로필</a>
+      <a href="{{ url_for('report') }}">신고하기</a>
+      <a href="{{ url_for('logout') }}">로그아웃</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">로그인</a>
+      <a href="{{ url_for('register') }}">회원가입</a>
+    {% endif %}
+  </nav>
+  <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li class="flash">{{ message | e }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
