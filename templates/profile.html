@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 {% block title %}프로필{% endblock %}
-
 {% block content %}
 <h2>프로필 수정</h2>
 <form method="post">
   {{ form.hidden_tag() }}
-  <label for="bio">소개글 (300자 이하)</label><br>
-  {{ form.bio(rows="5", cols="40", maxlength="300") }}<br>
+  소개글:<br>
+  {{ form.bio(rows=5, cols=50) }}<br>
   <button type="submit">저장</button>
 </form>
 {% endblock %}
