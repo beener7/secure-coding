@@ -1,6 +1,7 @@
 import sqlite3
 import uuid
 import re
+import secrets
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
 from flask_wtf import CSRFProtect
@@ -63,6 +64,11 @@ def init_db():
         """)
         db.commit()
 
+def generate_csrf_token():
+    token = secrets.token_hex(16)
+    session['_csrf_token'] = token
+    return token
+
 @app.route('/')
 def index():
     if 'user_id' in session:
@@ -100,8 +106,14 @@ def register():
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
+@csrf.exempt
 def login():
     if request.method == 'POST':
+        token = request.form.get('csrf_token')
+        if not token or token != session.get('_csrf_token'):
+            flash('잘못된 요청입니다. 다시 시도해주세요.')
+            return redirect(url_for('login'))
+
         username = request.form['username'].strip()
         password = request.form['password'].strip()
         db = get_db()
@@ -109,7 +121,7 @@ def login():
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
         user = cursor.fetchone()
         if user and check_password_hash(user['password'], password):
-            session.clear()  # 세션 고정 공격 방지
+            session.clear()
             session.permanent = True
             session['user_id'] = user['id']
             flash('로그인 성공!')
@@ -117,7 +129,7 @@ def login():
         else:
             flash('아이디 또는 비밀번호가 올바르지 않습니다.')
             return redirect(url_for('login'))
-    return render_template('login.html')
+    return render_template('login.html', csrf_token=generate_csrf_token())
 
 @app.route('/logout')
 def logout():
