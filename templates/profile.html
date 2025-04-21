@@ -1,10 +1,16 @@
-{% extends "base.html" %}
-{% block title %}프로필{% endblock %}
+{% extends 'layout.html' %}
+
 {% block content %}
 <h2>프로필 수정</h2>
 <form method="post">
-  소개글:<br>
-  <textarea name="bio" rows="5" cols="50" maxlength="300">{{ user.bio }}</textarea><br>
-  <button type="submit">저장</button>
+    {{ form.hidden_tag() }}
+
+    <div>
+        {{ form.bio.label }}<br>
+        {{ form.bio(size=60) }}
+    </div>
+    <div>
+        {{ form.submit(class="btn btn-success") }}
+    </div>
 </form>
 {% endblock %}
