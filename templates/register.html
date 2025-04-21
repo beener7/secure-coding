@@ -3,15 +3,18 @@
 {% block content %}
 <h2>회원가입</h2>
 <form method="post" autocomplete="off">
-  {% if csrf_token %}
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  {% endif %}
+  {{ csrf_token() }}
 
-  <label for="username">사용자명:</label>
-  <input type="text" id="username" name="username" required maxlength="20" pattern="^[a-zA-Z0-9_]{3,20}$" title="3~20자의 영문, 숫자, 밑줄만 사용 가능합니다."><br>
+  <label for="username">사용자명:</label><br>
+  <input type="text" id="username" name="username"
+         required maxlength="150" pattern="^[a-zA-Z0-9_]+$"
+         autocomplete="username"><br>
 
-  <label for="password">비밀번호:</label>
-  <input type="password" id="password" name="password" required minlength="8" maxlength="100"><br>
+  <label for="password">비밀번호:</label><br>
+  <input type="password" id="password" name="password"
+         required minlength="8" maxlength="128"
+         pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{8,}$"
+         autocomplete="new-password"><br>
 
   <button type="submit">회원가입</button>
 </form>
