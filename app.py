@@ -12,7 +12,7 @@ from datetime import timedelta
 # === 폼 클래스 정의 ===
 
 class ReportForm(FlaskForm):
-    target_id = StringField('신고 대상 ID', validators=[DataRequired(), Length(min=36, max=36)])
+    target_id = StringField('신고 대상 ID', validators=[DataRequired(), Length(min=5, max=36)])
     reason = StringField('신고 사유', validators=[DataRequired(), Length(max=500)])
     submit = SubmitField('신고하기')
 
