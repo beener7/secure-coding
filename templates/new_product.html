@@ -1,20 +1,12 @@
 {% extends "base.html" %}
 {% block title %}상품 등록{% endblock %}
-
 {% block content %}
 <h2>새 상품 등록</h2>
 <form method="post">
   {{ form.hidden_tag() }}
-
-  <label for="title">제목:</label>
-  {{ form.title(size=40, maxlength=100, required=True) }}<br>
-
-  <label for="description">설명:</label><br>
-  {{ form.description(rows="5", cols="40", maxlength="500", required=True) }}<br>
-
-  <label for="price">가격:</label>
-  {{ form.price(size=20, maxlength=20, required=True) }}<br>
-
+  상품명: {{ form.title(size=40) }}<br>
+  설명:<br> {{ form.description(rows=5, cols=50) }}<br>
+  가격: {{ form.price(size=20) }}<br>
   <button type="submit">등록</button>
 </form>
 {% endblock %}
