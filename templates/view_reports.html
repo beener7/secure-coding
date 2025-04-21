@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}신고 보기{% endblock %}
+
+{% block content %}
+  <h2>신고 보기</h2>
+
+  <h3>신고된 항목들</h3>
+  <ul>
+    {% for report in reports %}
+      <li>
+        신고자: {{ report.reporter }}<br>
+        신고 내용: {{ report.content }}<br>
+        신고 날짜: {{ report.date }}
+        <!-- 신고 처리 버튼 추가 -->
+        <a href="{{ url_for('handle_report', report_id=report.id) }}">처리</a>
+      </li>
+    {% else %}
+      <li>신고된 항목이 없습니다.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}
