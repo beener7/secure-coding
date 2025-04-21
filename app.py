@@ -11,6 +11,10 @@ from datetime import timedelta
 
 # === 폼 클래스 정의 ===
 
+class ChatForm(FlaskForm):
+    message = StringField('메시지', validators=[DataRequired()])
+    submit = SubmitField('전송')
+
 class ReportForm(FlaskForm):
     target_id = StringField('신고 대상 ID', validators=[DataRequired(), Length(min=5, max=36)])
     reason = StringField('신고 사유', validators=[DataRequired(), Length(max=500)])
@@ -268,10 +272,29 @@ def report():
     
     return render_template('report.html', form=form)
 
-@socketio.on('send_message')
-def handle_send_message_event(data):
-    data['message_id'] = str(uuid.uuid4())
+@app.route('/chat', methods=['GET', 'POST'])
+def chat():
+    form = ChatForm()
+    if form.validate_on_submit():
+        message = form.message.data.strip()
+        if message:
+            socketio.emit('chat_message', {'message': message, 'user': session['user_id']}, broadcast=True)
+            form.message.data = ''  # 메시지 전송 후 폼 리셋
+            flash('메시지가 전송되었습니다.')
+        else:
+            flash('메시지를 입력해주세요.')
+
+    return render_template('chat.html', form=form)
+
+@socketio.on('chat_message')
+def handle_chat_message(data):
     send(data, broadcast=True)
+
+
+#@socketio.on('send_message')
+#def handle_send_message_event(data):
+#    data['message_id'] = str(uuid.uuid4())
+#    send(data, broadcast=True)
 
 if __name__ == '__main__':
     init_db()
