@@ -4,10 +4,10 @@ import re
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
 from flask_wtf import FlaskForm, CSRFProtect
+from wtforms import StringField, TextAreaField
+from wtforms.validators import DataRequired, Length
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
-from wtforms import StringField, TextAreaField
-from wtforms.validators import InputRequired, Length
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secure-secret-key'
@@ -21,7 +21,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 DATABASE = 'market.db'
 
-# 데이터베이스 연결 관리
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -35,7 +34,6 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-# 테이블 생성 (최초 실행 시)
 def init_db():
     with app.app_context():
         db = get_db()
@@ -67,10 +65,9 @@ def init_db():
         """)
         db.commit()
 
-# FlaskForm을 이용한 신고 폼
 class ReportForm(FlaskForm):
-    target_id = StringField('Target ID', validators=[InputRequired(), Length(min=1, max=36)])
-    reason = TextAreaField('Reason', validators=[InputRequired(), Length(min=1, max=500)])
+    target_id = StringField('신고 대상 (사용자ID 또는 상품ID)', validators=[DataRequired(), Length(max=36)])
+    reason = TextAreaField('신고 사유', validators=[DataRequired(), Length(max=500)])
 
 @app.route('/')
 def index():
@@ -150,7 +147,6 @@ def dashboard():
 def profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    form = ReportForm()
     db = get_db()
     cursor = db.cursor()
     if request.method == 'POST':
@@ -164,7 +160,7 @@ def profile():
         return redirect(url_for('profile'))
     cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
     current_user = cursor.fetchone()
-    return render_template('profile.html', user=current_user, form=form)
+    return render_template('profile.html', user=current_user)
 
 @app.route('/product/new', methods=['GET', 'POST'])
 def new_product():
@@ -209,7 +205,7 @@ def view_product(product_id):
 def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
     form = ReportForm()
 
     if form.validate_on_submit():
@@ -226,7 +222,7 @@ def report():
         db.commit()
         flash('신고가 접수되었습니다.')
         return redirect(url_for('dashboard'))
-    
+
     return render_template('report.html', form=form)
 
 @socketio.on('send_message')
