@@ -2,9 +2,18 @@
 {% block title %}로그인{% endblock %}
 {% block content %}
 <h2>로그인</h2>
-<form method="post">
-  사용자명: <input type="text" name="username" required><br>
-  비밀번호: <input type="password" name="password" required><br>
+<form method="post" autocomplete="off">
+  {# CSRF 보호 (Flask-WTF 사용 시) #}
+  {% if csrf_token %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% endif %}
+
+  <label for="username">사용자명:</label>
+  <input type="text" id="username" name="username" required><br>
+
+  <label for="password">비밀번호:</label>
+  <input type="password" id="password" name="password" required autocomplete="off"><br>
+
   <button type="submit">로그인</button>
 </form>
 {% endblock %}
