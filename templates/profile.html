@@ -5,12 +5,16 @@
 <form method="post">
     {{ form.hidden_tag() }}
 
-    <div>
+    <div class="form-group">
         {{ form.bio.label }}<br>
-        {{ form.bio(size=60) }}
+        {{ form.bio(class="form-control", rows=4) }}
+        {% for error in form.bio.errors %}
+            <span class="flash">{{ error }}</span>
+        {% endfor %}
     </div>
-    <div>
-        {{ form.submit(class="btn btn-success") }}
+
+    <div class="form-group">
+        {{ form.submit(class="btn") }}
     </div>
 </form>
 {% endblock %}
