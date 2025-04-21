@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}송금하기{% endblock %}
+
+{% block content %}
+<h2>송금하기</h2>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div>
+        <label for="receiver_username">수신자 사용자명</label>
+        <input type="text" id="receiver_username" name="receiver_username" required>
+    </div>
+    <div>
+        {{ form.amount.label }}
+        {{ form.amount() }}
+    </div>
+    <button type="submit">{{ form.submit.label }}</button>
+</form>
+
+{% endblock %}
