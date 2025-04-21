@@ -1,16 +1,11 @@
 {% extends "base.html" %}
 {% block title %}회원가입{% endblock %}
-
 {% block content %}
 <h2>회원가입</h2>
 <form method="post">
   {{ form.hidden_tag() }}
-  <label for="username">사용자명:</label>
-  {{ form.username(size=32, maxlength=20, required=True) }}<br>
-
-  <label for="password">비밀번호:</label>
-  {{ form.password(size=32, maxlength=128, required=True) }}<br>
-
+  사용자명: {{ form.username(size=32) }}<br>
+  비밀번호: {{ form.password(size=32) }}<br>
   <button type="submit">회원가입</button>
 </form>
 {% endblock %}
