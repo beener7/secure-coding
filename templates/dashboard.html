@@ -22,9 +22,13 @@
 
 <script type="text/javascript">
   var socket = io();
+
+  // 연결 시 로그 확인
   socket.on('connect', function() {
     console.log("채팅 서버에 연결됨");
   });
+
+  // 서버에서 메시지를 받으면 메시지를 출력
   socket.on('message', function(data) {
     var messages = document.getElementById('messages');
     var item = document.createElement('li');
@@ -32,13 +36,22 @@
     messages.appendChild(item);
     messages.scrollTop = messages.scrollHeight;
   });
+
+  // 메시지 전송 함수
   function sendMessage() {
     var input = document.getElementById('chat_input');
     var message = input.value.trim();
+
     if (message.length > 0) {
-      socket.emit('send_message', { 'username': "{{ user.username | e }}", 'message': message });
-      input.value = "";
+      // 메시지를 서버로 전송
+      socket.emit('send_message', {
+        'username': "{{ user.username | e }}",  // 예시: 세션에서 사용자 이름을 가져오기
+        'message': message
+      });
+
+      input.value = "";  // 입력 필드 비우기
     }
   }
 </script>
+
 {% endblock %}
