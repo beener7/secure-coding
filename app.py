@@ -2,6 +2,7 @@ import sqlite3
 import uuid
 import re
 from forms import LoginForm
+from forms import RegisterForm
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
 from flask_wtf import CSRFProtect
@@ -68,9 +69,10 @@ def index():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
+    form = RegisterForm()
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        password = form.password.data.strip()
 
         if not re.match(r'^[\w.@+-]{4,20}$', username):
             flash('사용자명이 유효하지 않습니다.')
@@ -94,7 +96,7 @@ def register():
         flash('회원가입이 완료되었습니다.')
         return redirect(url_for('login'))
 
-    return render_template('register.html')
+    return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
