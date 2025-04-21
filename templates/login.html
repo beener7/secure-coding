@@ -4,22 +4,8 @@
 <h2>로그인</h2>
 <form method="post">
   {{ form.hidden_tag() }}
-  <div>
-    {{ form.username.label }}<br>
-    {{ form.username(size=32) }}<br>
-    {% for error in form.username.errors %}
-      <span style="color: red;">{{ error }}</span><br>
-    {% endfor %}
-  </div>
-  <div>
-    {{ form.password.label }}<br>
-    {{ form.password(size=32) }}<br>
-    {% for error in form.password.errors %}
-      <span style="color: red;">{{ error }}</span><br>
-    {% endfor %}
-  </div>
-  <div>
-    <button type="submit">로그인</button>
-  </div>
+  사용자명: {{ form.username(size=32) }}<br>
+  비밀번호: {{ form.password(size=32) }}<br>
+  <button type="submit">로그인</button>
 </form>
 {% endblock %}
