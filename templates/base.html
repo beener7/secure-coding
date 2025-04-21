@@ -5,12 +5,13 @@
   <title>{% block title %}My Market{% endblock %}</title>
 
   <!-- 보안 헤더 및 CSP -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:*">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:*">
   <meta name="referrer" content="no-referrer">
   <meta name="X-Content-Type-Options" content="nosniff">
   <meta name="X-Frame-Options" content="DENY">
 
-  <!-- Socket.IO 클라이언트 라이브러리 (제한된 도메인에서만 허용) -->
+  <!-- Socket.IO -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
           integrity="sha384-WtRZQzLhQ95PK1QZCgShfy5DJnRCu6yQO+6Ot6Y2BtdkWyv7GdZu8BzEJkKhB7nM"
           crossorigin="anonymous"></script>
@@ -23,17 +24,20 @@
       padding: 0;
       color: #333;
     }
+
     nav {
       background-color: #fff;
       padding: 20px;
       border-bottom: 1px solid #e0e0e0;
     }
+
     nav a {
       text-decoration: none;
       color: #555;
       margin-right: 15px;
       font-weight: 500;
     }
+
     .container {
       max-width: 800px;
       margin: 40px auto;
@@ -42,11 +46,13 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       border-radius: 8px;
     }
+
     h1, h2, h3 {
       font-weight: 600;
       margin-bottom: 20px;
     }
-    input, textarea, button {
+
+    input, textarea, select {
       width: 100%;
       padding: 10px;
       margin-bottom: 20px;
@@ -54,24 +60,26 @@
       border-radius: 4px;
       font-size: 16px;
     }
-    button {
+
+    button, .btn, input[type="submit"] {
       background-color: #007AFF;
       color: #fff;
       border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.2s;
+      font-size: 16px;
     }
-    button:hover {
+
+    button:hover, .btn:hover {
       background-color: #005BB5;
     }
-    ul {
-      list-style: none;
-      padding: 0;
+
+    .form-group {
+      margin-bottom: 20px;
     }
-    li {
-      padding: 10px;
-      border-bottom: 1px solid #e0e0e0;
-    }
+
     .flash {
       background-color: #FFECB3;
       padding: 10px;
@@ -79,9 +87,21 @@
       border-radius: 4px;
       margin-bottom: 20px;
     }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      padding: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
     #chat {
       margin-top: 40px;
     }
+
     #messages {
       height: 200px;
       overflow-y: auto;
@@ -105,6 +125,7 @@
       <a href="{{ url_for('register') }}">회원가입</a>
     {% endif %}
   </nav>
+
   <div class="container">
     {% with messages = get_flashed_messages() %}
       {% if messages %}
@@ -116,7 +137,9 @@
       {% endif %}
     {% endwith %}
 
-    {% block content %}{% endblock %}
+    {% block content %}
+    <!-- 여기서 각 페이지별 form 내용이 들어감 -->
+    {% endblock %}
   </div>
 </body>
 </html>
