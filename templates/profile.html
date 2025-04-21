@@ -3,9 +3,8 @@
 {% block content %}
 <h2>프로필 수정</h2>
 <form method="post">
-  {{ form.hidden_tag() }}
   소개글:<br>
-  {{ form.bio(rows=5, cols=50) }}<br>
+  <textarea name="bio" rows="5" cols="50" maxlength="300">{{ user.bio }}</textarea><br>
   <button type="submit">저장</button>
 </form>
 {% endblock %}
