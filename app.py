@@ -1,10 +1,11 @@
 import sqlite3
 import uuid
 import re
-import secrets
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
-from flask_wtf import CSRFProtect
+from flask_wtf import FlaskForm, CSRFProtect
+from wtforms import StringField, PasswordField, TextAreaField
+from wtforms.validators import InputRequired, Length, Regexp
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 
@@ -19,6 +20,27 @@ csrf = CSRFProtect(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 DATABASE = 'market.db'
+
+# 폼 정의
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[
+        InputRequired(),
+        Length(min=4, max=20),
+        Regexp(r'^[\w.@+-]+$', message="유효한 사용자명을 입력하세요.")
+    ])
+    password = PasswordField('Password', validators=[InputRequired(), Length(min=6)])
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[InputRequired()])
+    password = PasswordField('Password', validators=[InputRequired()])
+
+class ProfileForm(FlaskForm):
+    bio = TextAreaField('Bio', validators=[Length(max=300)])
+
+class ProductForm(FlaskForm):
+    title = StringField('Title', validators=[InputRequired(), Length(max=100)])
+    description = TextAreaField('Description', validators=[InputRequired(), Length(max=500)])
+    price = StringField('Price', validators=[InputRequired(), Length(max=20)])
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -64,11 +86,6 @@ def init_db():
         """)
         db.commit()
 
-def generate_csrf_token():
-    token = secrets.token_hex(16)
-    session['_csrf_token'] = token
-    return token
-
 @app.route('/')
 def index():
     if 'user_id' in session:
@@ -77,16 +94,10 @@ def index():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
-
-        if not re.match(r'^[\w.@+-]{4,20}$', username):
-            flash('사용자명이 유효하지 않습니다.')
-            return redirect(url_for('register'))
-        if len(password) < 6:
-            flash('비밀번호는 최소 6자 이상이어야 합니다.')
-            return redirect(url_for('register'))
+    form = RegisterForm()
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        password = form.password.data.strip()
 
         db = get_db()
         cursor = db.cursor()
@@ -102,20 +113,14 @@ def register():
         db.commit()
         flash('회원가입이 완료되었습니다.')
         return redirect(url_for('login'))
-
-    return render_template('register.html')
+    return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
-@csrf.exempt
 def login():
-    if request.method == 'POST':
-        token = request.form.get('csrf_token')
-        if not token or token != session.get('_csrf_token'):
-            flash('잘못된 요청입니다. 다시 시도해주세요.')
-            return redirect(url_for('login'))
-
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        password = form.password.data.strip()
         db = get_db()
         cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
@@ -129,7 +134,7 @@ def login():
         else:
             flash('아이디 또는 비밀번호가 올바르지 않습니다.')
             return redirect(url_for('login'))
-    return render_template('login.html', csrf_token=generate_csrf_token())
+    return render_template('login.html', form=form)
 
 @app.route('/logout')
 def logout():
@@ -153,33 +158,33 @@ def dashboard():
 def profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     db = get_db()
     cursor = db.cursor()
-    if request.method == 'POST':
-        bio = request.form.get('bio', '').strip()
-        if len(bio) > 300:
-            flash('소개글은 300자 이하로 작성해주세요.')
-            return redirect(url_for('profile'))
+    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+    current_user = cursor.fetchone()
+
+    form = ProfileForm()
+    if form.validate_on_submit():
+        bio = form.bio.data.strip()
         cursor.execute("UPDATE user SET bio = ? WHERE id = ?", (bio, session['user_id']))
         db.commit()
         flash('프로필이 업데이트되었습니다.')
         return redirect(url_for('profile'))
-    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
-    current_user = cursor.fetchone()
-    return render_template('profile.html', user=current_user)
+
+    form.bio.data = current_user['bio'] if current_user else ""
+    return render_template('profile.html', user=current_user, form=form)
 
 @app.route('/product/new', methods=['GET', 'POST'])
 def new_product():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    if request.method == 'POST':
-        title = request.form['title'].strip()
-        description = request.form['description'].strip()
-        price = request.form['price'].strip()
 
-        if not title or not description or not price:
-            flash("모든 항목을 입력해주세요.")
-            return redirect(url_for('new_product'))
+    form = ProductForm()
+    if form.validate_on_submit():
+        title = form.title.data.strip()
+        description = form.description.data.strip()
+        price = form.price.data.strip()
 
         db = get_db()
         cursor = db.cursor()
@@ -192,7 +197,7 @@ def new_product():
         flash('상품이 등록되었습니다.')
         return redirect(url_for('dashboard'))
 
-    return render_template('new_product.html')
+    return render_template('new_product.html', form=form)
 
 @app.route('/product/<product_id>')
 def view_product(product_id):
