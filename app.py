@@ -12,9 +12,9 @@ from datetime import timedelta
 # === 폼 클래스 정의 ===
 class ProductForm(FlaskForm):
     title = StringField('상품명', validators=[DataRequired(), Length(max=100)])
-    description = StringField('설명', validators=[DataRequired(), Length(max=500)])
+    description = TextAreaField('설명', validators=[DataRequired(), Length(max=1000)])
     price = DecimalField('가격', validators=[DataRequired(), NumberRange(min=0)])
-    submit = SubmitField('등록하기')
+    submit = SubmitField('등록')
 
 
 class RegisterForm(FlaskForm):
@@ -189,14 +189,11 @@ def new_product():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    if request.method == 'POST':
-        title = request.form['title'].strip()
-        description = request.form['description'].strip()
-        price = request.form['price'].strip()
-
-        if not title or not description or not price:
-            flash("모든 항목을 입력해주세요.")
-            return redirect(url_for('new_product'))
+    form = ProductForm()
+    if form.validate_on_submit():
+        title = form.title.data.strip()
+        description = form.description.data.strip()
+        price = str(form.price.data)
 
         db = get_db()
         cursor = db.cursor()
@@ -209,7 +206,7 @@ def new_product():
         flash('상품이 등록되었습니다.')
         return redirect(url_for('dashboard'))
 
-    return render_template('new_product.html')
+    return render_template('new_product.html', form=form)
 
 @app.route('/product/<product_id>')
 def view_product(product_id):
