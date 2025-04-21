@@ -4,12 +4,19 @@ import re
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
 from flask_wtf import CSRFProtect, FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Length, EqualTo
+from wtforms import StringField, PasswordField, SubmitField, DecimalField
+from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 
 # === 폼 클래스 정의 ===
+class ProductForm(FlaskForm):
+    title = StringField('상품명', validators=[DataRequired(), Length(max=100)])
+    description = StringField('설명', validators=[DataRequired(), Length(max=500)])
+    price = DecimalField('가격', validators=[DataRequired(), NumberRange(min=0)])
+    submit = SubmitField('등록하기')
+
+
 class RegisterForm(FlaskForm):
     username = StringField('사용자명', validators=[DataRequired(), Length(min=4, max=32)])
     password = PasswordField('비밀번호', validators=[DataRequired(), Length(min=6, max=32)])
