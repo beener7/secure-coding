@@ -10,6 +10,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 
 # === 폼 클래스 정의 ===
+
+class ProfileForm(FlaskForm):
+    bio = TextAreaField('소개글', validators=[Length(max=300)])
+    submit = SubmitField('수정하기')
+
+
 class ProductForm(FlaskForm):
     title = StringField('상품명', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('설명', validators=[DataRequired(), Length(max=1000)])
@@ -166,23 +172,23 @@ def dashboard():
 def profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
     db = get_db()
     cursor = db.cursor()
     
-    if request.method == 'POST':
-        bio = request.form.get('bio', '').strip()
-        if len(bio) > 300:
-            flash('소개글은 300자 이하로 작성해주세요.')
-            return redirect(url_for('profile'))
+    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
+    current_user = cursor.fetchone()
+
+    form = ProfileForm(bio=current_user['bio'])
+
+    if form.validate_on_submit():
+        bio = form.bio.data.strip()
         cursor.execute("UPDATE user SET bio = ? WHERE id = ?", (bio, session['user_id']))
         db.commit()
         flash('프로필이 업데이트되었습니다.')
         return redirect(url_for('profile'))
-    
-    cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
-    current_user = cursor.fetchone()
-    return render_template('profile.html', user=current_user)
+
+    return render_template('edit_profile.html', form=form)
 
 @app.route('/product/new', methods=['GET', 'POST'])
 def new_product():
