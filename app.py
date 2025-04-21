@@ -1,13 +1,12 @@
 import sqlite3
 import uuid
 import re
-from forms import LoginForm
-from forms import RegisterForm
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
 from flask_wtf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
+from forms import LoginForm, RegisterForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secure-secret-key'
@@ -74,9 +73,12 @@ def register():
         username = form.username.data.strip()
         password = form.password.data.strip()
 
+        # 사용자명 유효성 검사
         if not re.match(r'^[\w.@+-]{4,20}$', username):
             flash('사용자명이 유효하지 않습니다.')
             return redirect(url_for('register'))
+        
+        # 비밀번호 길이 검사
         if len(password) < 6:
             flash('비밀번호는 최소 6자 이상이어야 합니다.')
             return redirect(url_for('register'))
@@ -109,6 +111,7 @@ def login():
         cursor = db.cursor()
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
         user = cursor.fetchone()
+
         if user and check_password_hash(user['password'], password):
             session.clear()
             session.permanent = True
@@ -120,7 +123,6 @@ def login():
             return redirect(url_for('login'))
     return render_template('login.html', form=form)
 
-
 @app.route('/logout')
 def logout():
     session.clear()
@@ -131,6 +133,7 @@ def logout():
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
     db = get_db()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
@@ -143,8 +146,10 @@ def dashboard():
 def profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
     db = get_db()
     cursor = db.cursor()
+    
     if request.method == 'POST':
         bio = request.form.get('bio', '').strip()
         if len(bio) > 300:
@@ -154,6 +159,7 @@ def profile():
         db.commit()
         flash('프로필이 업데이트되었습니다.')
         return redirect(url_for('profile'))
+    
     cursor.execute("SELECT * FROM user WHERE id = ?", (session['user_id'],))
     current_user = cursor.fetchone()
     return render_template('profile.html', user=current_user)
@@ -162,6 +168,7 @@ def profile():
 def new_product():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     if request.method == 'POST':
         title = request.form['title'].strip()
         description = request.form['description'].strip()
@@ -190,9 +197,11 @@ def view_product(product_id):
     cursor = db.cursor()
     cursor.execute("SELECT * FROM product WHERE id = ?", (product_id,))
     product = cursor.fetchone()
+
     if not product:
         flash('상품을 찾을 수 없습니다.')
         return redirect(url_for('dashboard'))
+
     cursor.execute("SELECT * FROM user WHERE id = ?", (product['seller_id'],))
     seller = cursor.fetchone()
     return render_template('view_product.html', product=product, seller=seller)
@@ -201,15 +210,19 @@ def view_product(product_id):
 def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
     if request.method == 'POST':
         target_id = request.form['target_id'].strip()
         reason = request.form['reason'].strip()
+
         if not target_id or not reason:
             flash('신고 대상과 사유를 입력해주세요.')
             return redirect(url_for('report'))
+
         if len(reason) > 500:
             flash('신고 사유는 500자 이하로 작성해주세요.')
             return redirect(url_for('report'))
+
         db = get_db()
         cursor = db.cursor()
         report_id = str(uuid.uuid4())
@@ -220,6 +233,7 @@ def report():
         db.commit()
         flash('신고가 접수되었습니다.')
         return redirect(url_for('dashboard'))
+    
     return render_template('report.html')
 
 @socketio.on('send_message')
