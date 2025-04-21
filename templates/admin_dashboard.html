@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}관리자 대시보드{% endblock %}
+{% block content %}
+<h2>관리자 대시보드</h2>
+
+<h3>사용자 목록</h3>
+<ul>
+  {% for user in users %}
+    <li>{{ user.username }} - 이메일: {{ user.email }} {% if user.is_admin %}(관리자){% endif %}</li>
+  {% endfor %}
+</ul>
+
+<h3>등록된 상품</h3>
+<ul>
+  {% for product in products %}
+    <li>{{ product.title }} - 가격: {{ product.price }} - 등록자 ID: {{ product.user_id }}</li>
+  {% endfor %}
+</ul>
+
+<h3>신고 내역</h3>
+<ul>
+  {% for report in reports %}
+    <li>신고 대상: {{ report.target_id }} - 사유: {{ report.reason }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}
