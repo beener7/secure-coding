@@ -1,11 +1,10 @@
 import sqlite3
 import uuid
 import re
+import secrets
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
 from flask_socketio import SocketIO, send
-from flask_wtf import FlaskForm, CSRFProtect
-from wtforms import StringField, TextAreaField
-from wtforms.validators import DataRequired, Length
+from flask_wtf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 
@@ -65,9 +64,10 @@ def init_db():
         """)
         db.commit()
 
-class ReportForm(FlaskForm):
-    target_id = StringField('신고 대상 (사용자ID 또는 상품ID)', validators=[DataRequired(), Length(max=36)])
-    reason = TextAreaField('신고 사유', validators=[DataRequired(), Length(max=500)])
+def generate_csrf_token():
+    token = secrets.token_hex(16)
+    session['_csrf_token'] = token
+    return token
 
 @app.route('/')
 def index():
@@ -106,8 +106,14 @@ def register():
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
+@csrf.exempt
 def login():
     if request.method == 'POST':
+        token = request.form.get('csrf_token')
+        if not token or token != session.get('_csrf_token'):
+            flash('잘못된 요청입니다. 다시 시도해주세요.')
+            return redirect(url_for('login'))
+
         username = request.form['username'].strip()
         password = request.form['password'].strip()
         db = get_db()
@@ -115,7 +121,7 @@ def login():
         cursor.execute("SELECT * FROM user WHERE username = ?", (username,))
         user = cursor.fetchone()
         if user and check_password_hash(user['password'], password):
-            session.clear()  # 세션 고정 공격 방지
+            session.clear()
             session.permanent = True
             session['user_id'] = user['id']
             flash('로그인 성공!')
@@ -123,7 +129,7 @@ def login():
         else:
             flash('아이디 또는 비밀번호가 올바르지 않습니다.')
             return redirect(url_for('login'))
-    return render_template('login.html')
+    return render_template('login.html', csrf_token=generate_csrf_token())
 
 @app.route('/logout')
 def logout():
@@ -205,13 +211,15 @@ def view_product(product_id):
 def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-
-    form = ReportForm()
-
-    if form.validate_on_submit():
-        target_id = form.target_id.data.strip()
-        reason = form.reason.data.strip()
-
+    if request.method == 'POST':
+        target_id = request.form['target_id'].strip()
+        reason = request.form['reason'].strip()
+        if not target_id or not reason:
+            flash('신고 대상과 사유를 입력해주세요.')
+            return redirect(url_for('report'))
+        if len(reason) > 500:
+            flash('신고 사유는 500자 이하로 작성해주세요.')
+            return redirect(url_for('report'))
         db = get_db()
         cursor = db.cursor()
         report_id = str(uuid.uuid4())
@@ -222,8 +230,7 @@ def report():
         db.commit()
         flash('신고가 접수되었습니다.')
         return redirect(url_for('dashboard'))
-
-    return render_template('report.html', form=form)
+    return render_template('report.html')
 
 @socketio.on('send_message')
 def handle_send_message_event(data):
