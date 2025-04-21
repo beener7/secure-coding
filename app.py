@@ -11,6 +11,11 @@ from datetime import timedelta
 
 # === 폼 클래스 정의 ===
 
+class ReportForm(FlaskForm):
+    target_id = StringField('신고 대상 ID', validators=[DataRequired(), Length(min=36, max=36)])
+    reason = StringField('신고 사유', validators=[DataRequired(), Length(max=500)])
+    submit = SubmitField('신고하기')
+
 class ProfileForm(FlaskForm):
     bio = TextAreaField('소개글', validators=[Length(max=300)])
     submit = SubmitField('수정하기')
@@ -235,10 +240,13 @@ def report():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    if request.method == 'POST':
-        target_id = request.form['target_id'].strip()
-        reason = request.form['reason'].strip()
+    form = ReportForm()
 
+    if form.validate_on_submit():
+        target_id = form.target_id.data.strip()
+        reason = form.reason.data.strip()
+
+        # 신고 대상 ID 및 사유가 유효한지 확인
         if not target_id or not reason:
             flash('신고 대상과 사유를 입력해주세요.')
             return redirect(url_for('report'))
@@ -258,7 +266,7 @@ def report():
         flash('신고가 접수되었습니다.')
         return redirect(url_for('dashboard'))
     
-    return render_template('report.html')
+    return render_template('report.html', form=form)
 
 @socketio.on('send_message')
 def handle_send_message_event(data):
