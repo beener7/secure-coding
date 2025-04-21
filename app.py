@@ -2,9 +2,9 @@ import sqlite3
 import uuid
 import re
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g
+from wtforms import StringField, PasswordField, SubmitField, DecimalField, TextAreaField
 from flask_socketio import SocketIO, send
 from flask_wtf import CSRFProtect, FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, DecimalField
 from wtforms.validators import DataRequired, Length, EqualTo, NumberRange
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
