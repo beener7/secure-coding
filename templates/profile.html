@@ -2,16 +2,11 @@
 {% block title %}프로필{% endblock %}
 {% block content %}
 <h2>프로필 관리</h2>
-<p>사용자명: {{ user.username }}</p>
-
-<form method="post" autocomplete="off">
-  {% if csrf_token %}
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  {% endif %}
-
-  <label for="bio">소개글:</label><br>
-  <textarea id="bio" name="bio" rows="4" cols="50" maxlength="1000">{{ user.bio | e }}</textarea><br>
-
+<p>사용자명: {{ user.username | e }}</p>
+<form method="post">
+  {{ csrf_token() }}
+  소개글: <br>
+  <textarea name="bio" rows="4" cols="50" maxlength="500">{{ user.bio | e }}</textarea><br>
   <button type="submit">프로필 업데이트</button>
 </form>
 {% endblock %}
