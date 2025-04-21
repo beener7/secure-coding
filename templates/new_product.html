@@ -1,5 +1,7 @@
 {% extends 'layout.html' %}
 
+{% block title %}상품 등록{% endblock %}
+
 {% block content %}
 <h2>상품 등록</h2>
 <form method="post">
@@ -9,7 +11,7 @@
         {{ form.title.label }}<br>
         {{ form.title(class="form-control") }}
         {% for error in form.title.errors %}
-          <span class="flash">{{ error }}</span>
+            <span class="flash">{{ error }}</span>
         {% endfor %}
     </div>
 
@@ -17,7 +19,7 @@
         {{ form.description.label }}<br>
         {{ form.description(class="form-control") }}
         {% for error in form.description.errors %}
-          <span class="flash">{{ error }}</span>
+            <span class="flash">{{ error }}</span>
         {% endfor %}
     </div>
 
@@ -25,11 +27,11 @@
         {{ form.price.label }}<br>
         {{ form.price(class="form-control") }}
         {% for error in form.price.errors %}
-          <span class="flash">{{ error }}</span>
+            <span class="flash">{{ error }}</span>
         {% endfor %}
     </div>
 
-    <div>
+    <div class="form-group">
         {{ form.submit(class="btn") }}
     </div>
 </form>
