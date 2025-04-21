@@ -1,26 +1,16 @@
 {% extends "base.html" %}
 {% block title %}관리자 대시보드{% endblock %}
+
 {% block content %}
-<h2>관리자 대시보드</h2>
+  <h2>관리자 대시보드</h2>
 
-<h3>사용자 목록</h3>
-<ul>
-  {% for user in users %}
-    <li>{{ user.username }} - 이메일: {{ user.email }} {% if user.is_admin %}(관리자){% endif %}</li>
-  {% endfor %}
-</ul>
+  <h3>환영합니다, {{ user.username }}님!</h3>
 
-<h3>등록된 상품</h3>
-<ul>
-  {% for product in products %}
-    <li>{{ product.title }} - 가격: {{ product.price }} - 등록자 ID: {{ product.user_id }}</li>
-  {% endfor %}
-</ul>
+  <p>여기에서 다양한 관리 작업을 할 수 있습니다.</p>
 
-<h3>신고 내역</h3>
-<ul>
-  {% for report in reports %}
-    <li>신고 대상: {{ report.target_id }} - 사유: {{ report.reason }}</li>
-  {% endfor %}
-</ul>
+  <ul>
+    <li><a href="{{ url_for('manage_products') }}">상품 관리</a></li>
+    <li><a href="{{ url_for('view_reports') }}">신고 보기</a></li>
+    <li><a href="{{ url_for('view_users') }}">사용자 관리</a></li>
+  </ul>
 {% endblock %}
